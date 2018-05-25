@@ -1,143 +1,78 @@
-#!/usr/local/bin/bash
+#!/usr/bin/env bash
 
-print_help() {
-	echo ""
-	echo "Usage: PROGRAM_NAME [options]"
-	echo "  -h --help		Display help message and exit"
-	echo "  -n --new			Run setup with all options"
-	echo "  -b --basics		Install CLI Tools, Homebrew, MAS, and Zsh"
-	echo "  -s --settings   	Write preferences"
-	echo "  -a --apps		Launch apps and setup dock"
-}
+if [ $(uname -s) != "Darwin" ]; then
+	echo "This is not a Mac. Aborting..."
+	exit 1
+fi
 
-#PROGRAM-SPECIFIC FUNCTIONS GO HERE
-setup_xcode_brew_mas_zsh() {
-	if [ ! "$(which brew)" ]; then
-		ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	fi
+sudo -v
 
-	brew tap Caskroom/Cask
-	brew tap Homebrew/bundle
-	brew update
-	brew upgrade
+if ! command -v brew >/dev/null 2>&1; then
+	echo "Installing homebrew"
+	ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+fi
 
-	clear && sudo easy_install pip
+#Lazy check. FIXME
+if [ "$(mas account)" = "" ]; then
+	echo 'Enter Mac App Store account details'
+	read -p 'MAS email: ' mas_email
+	read -s -p 'MAS password (will not be echoed): ' mas_password
+	mas signin $mas_email "$mas_password"
+fi
 
-	brew bundle -path=$HOME/.config/Brewfile
+if [ -f "$HOME/.config/Brewfile" ]; then
+	echo "Installing packages in ~/.config/Brewfile..."
+	brew bundle --file="$HOME/.config/Brewfile"
+fi
 
-	#Lazy. FIXME
-	if [ "$(mas account)" = "" ]; then
-	  clear
-	  echo 'Enter Mac App Store account details'
-	  read -p 'MAS email: ' mas_email
-	  read -s -p 'MAS password (will not be echoed): ' mas_password
-	  mas signin $mas_email "$mas_password"
-	fi
+if grep -Fxq "/usr/local/bin/fish" /etc/shells; then
+	echo "Appending $(command -v fish) to /etc/shells..."
+	command -v fish | sudo tee -a /etc/shells
+fi
+echo "Changing shell to fish..."
+chsh -s /usr/local/bin/fish
 
-	grep -qF "/usr/local/bin/fish" "/etc/shells" || clear; sudo echo "/usr/local/bin/fish" >> "/etc/shells"
-	chsh -s /usr/local/bin/fish
-}
+echo "Setting system and application preferences..."
+defaults write com.aone.keka ExcludeMacForks -int 1
+defaults write com.apple.CrashReporter UseUNC -int 1                          #crash reporter appears as a notification
+defaults write com.apple.Dashboard mcx-disabled -bool true                    #disable the dashboard
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true  #don't create .DS_Stores on network volumes
+defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true      #don't create .DS_Stores on USB sticks
+defaults write com.apple.dock autohide-delay -float 0                         #remove show dock delay
+defaults write com.apple.dock showhidden -bool true                           #show icons of hidden applications as translucent in the dock
+defaults write com.apple.dock autohide -int 1                                 #auto-hide dock.
+defaults write com.apple.dock ResetLaunchPad -bool true 					  #reset launchpad to default state
+defaults write com.apple.finder _FXShowPosixPathInTitle -bool true            #show full filepath in Finder title bar
+defaults write com.apple.finder QLEnableTextSelection -bool true              #enable text selection in quick look
+defaults write com.apple.finder FXPreferredViewStyle -string 'Clmv'           #set column view as preffered window style
+defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false    #disable the warning when changing a file extension
+defaults write com.apple.finder WarnOnEmptyTrash -bool false                  #disable the warning before emptying the Trash
+defaults write com.apple.ImageCapture disableHotPlug -bool true               #go away photos, if I wanted you open I would have said so
+defaults write com.apple.LaunchServices LSQuarantine -bool false              #disable "are you sure you want to run this application" dialog
+defaults write com.apple.screencapture disable-shadow -bool true              #disable shadow on window when screenshotting something
+defaults write com.apple.screencapture location "$HOME/Downloads"             #move screenshot save location to Downloads
+defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool true   #prevent Time Machine from prompting to use new hard drives as backup volume
+defaults write com.apple.TextEdit RichText -int 0                             #set plaintext as default textedit document type
+defaults write NSGlobalDomain _HIEnableThemeSwitchHotKey -bool true           #allow hotkey toggling of dark mode with cmd-alt-ctrl-t
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true   #auto-expand save window when saving something
+defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true  #auto-expand save window when saving something
+defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false    #disable automatic capitalization as it’s annoying when typing code
+defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false #disable smart quotes as they are annoying when typing code
+defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false  #disable smart dashes as they are annoying when typing code
+defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -int 0     #disable autocorrect
+defaults write NSGlobalDomain KeyRepeat -int 2                                #speed up key repeat rate
 
-write_settings() {
-	defaults write com.apple.Dashboard mcx-disabled -bool true                    #disable the dashboard
-	defaults write com.apple.TextEdit RichText -int 0                             #set plaintext as default textedit document type
-	defaults write com.apple.screencapture disable-shadow -bool true              #disable shadow on window when screenshotting something
-	defaults write com.apple.screencapture location "$HOME/Downloads"             #move screenshot save location to Downloads
-	defaults write com.apple.ImageCapture disableHotPlug -bool true               #go away photos, if I wanted you open I would have said so
-	defaults write com.apple.CrashReporter UseUNC -int 1                          #crash reporter appears as a notification
-	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true  #don't create .DS_Stores on network volumes
-	defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true      #don't create .DS_Stores on USB sticks
-	defaults write com.apple.LaunchServices LSQuarantine -bool false              #disable "are you sure you want to run this application" dialog
-	defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool true   #prevent Time Machine from prompting to use new hard drives as backup volume
+echo "Disabling gatekeeper..."
+sudo spctl --master-disable
 
-	defaults write com.apple.dock autohide-delay -float 0                         #remove show dock delay
-	defaults write com.apple.dock showhidden -bool true                           #show icons of hidden applications as translucent in the dock
-	defaults write com.apple.dock autohide -int 1                                 #auto-hide dock. found this one myself :)
+chflags nohidden $HOME/Library
 
-	defaults write NSGlobalDomain _HIEnableThemeSwitchHotKey -bool true           #allow hotkey toggling of dark mode with cmd-alt-ctrl-t
-	defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true   #auto-expand save window when saving something
-	defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true  #auto-expand save window when saving something
-	defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false #disable smart quotes as they are annoying when typing code
-	defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false  #disable smart dashes as they are annoying when typing code
-	defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -int 0     #disable autocorrect
-	defaults write NSGlobalDomain KeyRepeat -int 2                                #speed up key repeat rate
+killall Dock
+killall SystemUIServer
+killall Finder
 
-	defaults write com.apple.finder _FXShowPosixPathInTitle -bool true            #show full filepath in Finder title bar
-	defaults write com.apple.finder QLEnableTextSelection -bool true              #enable text selection in quick look
-	defaults write com.apple.finder FXPreferredViewStyle -string 'Clmv'           #set column view as preffered window style
-	defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false    #disable the warning when changing a file extension
-	defaults write com.apple.finder WarnOnEmptyTrash -bool false                  #disable the warning before emptying the Trash
+echo ""
+sudo tccutil -i com.crowdcafe.windowmagnet
+sudo tccutil -i com.slate.Slate
 
-	defaults write com.aone.keka ExcludeMacForks -int 1
-
-	clear && sudo spctl --master-disable                                          #allow launching of unidentified apps
-	chflags nohidden $HOME/Library                                                #show library folder
-	
-	git config --global ghq.root $HOME/src
-
-	killall Dock
-	killall SystemUIServer
-	killall Finder
-
-	clear
-	sudo tccutil.py -i com.crowdcafe.windowmagnet
-	sudo tccutil.py -i com.runningwithcrayons.Alfred-3
-	sudo tccutil.py -i com.stairways.keyboardmaestro.editor
-	sudo tccutil.py -i com.stairways.keyboardmaestro.engine
-}
-
-setup_apps() {
-	dockutil --remove all
-	dockutil --add "/Applications/Path Finder.app"
-	dockutil --add "/Applications/Google Chrome.app"
-	dockutil --add "/Applications/Visual Studio Code.app"
-	dockutil --add "/Applications/iTerm.app"
-	dockutil --add "/Applications/System Preferences.app"
-
-	defaults write com.apple.dock ResetLaunchPad -bool true #reset launchpad to default state
-
-	open "/Applications/Monolingual.app"
-	open "/Applications/Alfred 3.app"
-	open "/Applications/Google Chrome.app" --args --make-default-browser
-	open "/Applications/Magnet.app"
-	open "/Applications/iTerm.app"
-	open "/Applications/Path Finder.app"
-	open "/Applications/Keka.app"
-}
-
-#args are the $@ array
-	if [[ "$OSTYPE" != "darwin"* ]]; then
-		echo "This is not a Mac, why are you even running this script"
-		exit 1
-	fi
-
-	#handle arguments
-	while [ "$#" -gt 0 ]; do
-		case "$1" in
-			#adding a shift after every argument will make it skip over args. don't do that
-			#adding a $ before the variables in each case will cause bash to evaluate and not assign the variables
-			'-h'|'--help')
-				print_help
-				exit 0
-				;;
-			'-n'|'--new')
-				setup_xcode_brew_mas_zsh
-				setup_apps
-				write_settings
-				cleanup
-				;;
-			'-b'|'--basics')
-				setup_xcode_brew_mas_zsh
-				;;
-			'-s'|'--settings')
-				write_settings
-				;;
-			'-a'|'--apps')
-				setup_apps
-				;;
-		esac
-		shift
-	done
-}
-
-main "$@"
+dockutil --remove all
