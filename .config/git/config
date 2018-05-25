@@ -1,0 +1,10 @@
+[user]
+	name = Logan Izenas
+	email = loganizenas@gmail.com
+[core]
+	editor = micro
+	excludesfile = ~/.config/git/ignore
+	autocrlf = input
+	safecrlf = true
+[ghq]
+	root = /Users/lizenas/src
