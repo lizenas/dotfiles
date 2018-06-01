@@ -21,6 +21,7 @@ brew "gnu-tar", args: ["with-default-names"]
 brew "gnu-which", args: ["with-default-names"]
 brew "grep", args: ["with-default-names"]
 brew "gzip"
+brew "htop"
 brew "kakoune"
 brew "less"
 brew "mas"
@@ -59,4 +60,5 @@ cask "visual-studio"
 cask "homebrew/cask-fonts/font-fira-code"
 cask "homebrew/cask-versions/iterm2-beta"
 mas "Amphetamine", id: 937984704
+mas "LimeChat", id: 414030210
 mas "Magnet", id: 441258766
