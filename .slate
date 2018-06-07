@@ -35,4 +35,4 @@ bind pad8 ${tophalf}
 bind pad9 ${topright}
 bind pad+ ${full}
 bind pad. relaunch
-bind esc:cmd hint
+bind esc:cmd hint 1234567890QWERTYUIOP

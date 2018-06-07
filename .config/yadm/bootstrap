@@ -41,7 +41,7 @@ defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true      #d
 defaults write com.apple.dock autohide-delay -float 0                         #remove show dock delay
 defaults write com.apple.dock showhidden -bool true                           #show icons of hidden applications as translucent in the dock
 defaults write com.apple.dock autohide -int 1                                 #auto-hide dock.
-defaults write com.apple.dock ResetLaunchPad -bool true 					  #reset launchpad to default state
+defaults write com.apple.dock ResetLaunchPad -bool true                       #reset launchpad to default state
 defaults write com.apple.finder _FXShowPosixPathInTitle -bool true            #show full filepath in Finder title bar
 defaults write com.apple.finder QLEnableTextSelection -bool true              #enable text selection in quick look
 defaults write com.apple.finder FXPreferredViewStyle -string 'Clmv'           #set column view as preffered window style
@@ -62,6 +62,9 @@ defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false  #d
 defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -int 0     #disable autocorrect
 defaults write NSGlobalDomain KeyRepeat -int 2                                #speed up key repeat rate
 
+#remove vscode watermark from "no file" page
+mv -f /Applications/"Visual Studio Code.app"/Contents/Resources/app/resources/letterpress-dark.svg /Applications/"Visual Studio Code.app"/Contents/Resources/app/resources/_letterpress-dark.svg
+
 echo "Disabling gatekeeper..."
 sudo spctl --master-disable
 
@@ -71,7 +74,6 @@ killall Dock
 killall SystemUIServer
 killall Finder
 
-echo ""
 sudo tccutil -i com.crowdcafe.windowmagnet
 sudo tccutil -i com.slate.Slate
 
