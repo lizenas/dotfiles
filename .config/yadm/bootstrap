@@ -1,20 +1,26 @@
 #!/usr/bin/env bash
 
+readonly LOG_FILE="/tmp/$(basename "$0").log"
+info()    { echo "[INFO]    $*" | tee -a "$LOG_FILE" >&2 ; }
+warning() { echo "[WARNING] $*" | tee -a "$LOG_FILE" >&2 ; }
+error()   { echo "[ERROR]   $*" | tee -a "$LOG_FILE" >&2 ; }
+fatal()   { echo "[FATAL]   $*" | tee -a "$LOG_FILE" >&2 ; exit 1 ; }
+
 if [ $(uname -s) != "Darwin" ]; then
-	echo "This is not a Mac. Aborting..."
+	fatal "This is not a Mac. Aborting..."
 	exit 1
 fi
 
 sudo -v
 
 if ! command -v brew >/dev/null 2>&1; then
-	echo "Installing homebrew"
+	info "Homebrew not found. Installing..."
 	ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
 
 #Lazy check. FIXME
 if [ "$(mas account)" = "" ]; then
-	echo 'Enter Mac App Store account details'
+	info 'Mac App Store credentials are required enable automatic download'
 	read -p 'MAS email: ' mas_email
 	read -s -p 'MAS password (will not be echoed): ' mas_password
 	mas signin $mas_email "$mas_password"
@@ -26,13 +32,14 @@ if [ -f "$HOME/.config/Brewfile" ]; then
 fi
 
 if grep -Fxq "/usr/local/bin/fish" /etc/shells; then
-	echo "Appending $(command -v fish) to /etc/shells..."
+	info "Appending $(command -v fish) to /etc/shells..."
 	command -v fish | sudo tee -a /etc/shells
 fi
-echo "Changing shell to fish..."
+
+info "Changing shell to fish..."
 chsh -s /usr/local/bin/fish
 
-echo "Setting system and application preferences..."
+info "Setting system and application preferences..."
 defaults write com.aone.keka ExcludeMacForks -int 1
 defaults write com.apple.CrashReporter UseUNC -int 1                          #crash reporter appears as a notification
 defaults write com.apple.Dashboard mcx-disabled -bool true                    #disable the dashboard
@@ -65,7 +72,7 @@ defaults write NSGlobalDomain KeyRepeat -int 2                                #s
 #remove vscode watermark from "no file" page
 mv -f /Applications/"Visual Studio Code.app"/Contents/Resources/app/resources/letterpress-dark.svg /Applications/"Visual Studio Code.app"/Contents/Resources/app/resources/_letterpress-dark.svg
 
-echo "Disabling gatekeeper..."
+info "Disabling gatekeeper..."
 sudo spctl --master-disable
 
 chflags nohidden $HOME/Library
